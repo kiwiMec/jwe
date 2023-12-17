@@ -1,10 +1,5 @@
 package io.kiwimec.jwe;
 
-import com.nimbusds.jose.*;
-import com.nimbusds.jose.crypto.*;
-import com.nimbusds.jose.jwk.*;
-import com.nimbusds.jose.jwk.gen.*;
-import com.nimbusds.jose.jwk.source.*;
 import com.nimbusds.jwt.*;
 
 public class Main {
@@ -19,19 +14,23 @@ public class Main {
     bob.sharePubKeysWith(alice);
 
     // create a claim set for alice to send to Bob
-    JWTClaimsSet claimsSetToSend = new JWTClaimsSet.Builder()
+    JWTClaimsSet aliceClaimsSet = new JWTClaimsSet.Builder()
         .subject("alice")
-        .issuer("https://kiwimec.io")
+        .issuer("https://alice_and_bob.io")
         .build();
 
     // get alice to send the claims to bob in a JWE to print
-    String serialisedJwe = alice.createAJweFrom(claimsSetToSend);
-    JWTClaimsSet claimsSetReturned = bob.extractClaimsFrom(serialisedJwe);
+    String serialisedJwe = alice.createAJweFrom(aliceClaimsSet);
+    JWTClaimsSet claimsSetExtractedByBob = bob.extractClaimsFrom(serialisedJwe);
 
-    // if claimsSetReturned is not null verify its contents
-    if(null != claimsSetReturned) {
-      System.out.println("claimsSetToSend.subject: " + claimsSetToSend.getSubject());
-      System.out.println("claimsSetReturned.subject: " + claimsSetReturned.getSubject());
+    // if claimsSetReturned is not null print its contents so we can visually inspect
+    if(null != claimsSetExtractedByBob) {
+      System.out.println("Alice's claims set:");
+      System.out.println(aliceClaimsSet);
+      System.out.println("Claims set extracted by Bob:");
+      System.out.println(claimsSetExtractedByBob);
+      System.out.println("Serialised JWE:");
+      System.out.println(serialisedJwe);
     }
 
     System.out.println("Hello World!");

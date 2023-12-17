@@ -32,6 +32,10 @@ class Agent {
                 .keyUse(KeyUse.SIGNATURE)
                 .generate();
         pubSig = priSig.toPublicJWK();
+        System.out.println("Private signing key:");
+        System.out.println(priSig);
+        System.out.println("Public signing key:");
+        System.out.println(pubSig);
 
         // set up encryption keys
         keyCounter++;
@@ -40,6 +44,10 @@ class Agent {
                 .keyUse(KeyUse.ENCRYPTION)
                 .generate();
         pubEnc = priEnc.toPublicJWK();
+        System.out.println("Private encryption key:");
+        System.out.println(priEnc);
+        System.out.println("Public encryption key:");
+        System.out.println(pubEnc);
     }
 
     public void sharePubKeysWith(Agent agent) {
@@ -54,6 +62,9 @@ class Agent {
                 new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(priSig.getKeyID()).build(),
                 claimsSet);
         signedJWT.sign(new RSASSASigner(priSig));
+        System.out.println("Signed JWT header:\n" + signedJWT.getHeader());
+        System.out.println("Signed JWT claims:\n" + signedJWT.getJWTClaimsSet());
+        System.out.println("Signed JWT signature:\n" + signedJWT.getSignature());
 
         // Create JWE object with signed JWT as payload
         JWEObject jweObject = new JWEObject(
@@ -62,6 +73,7 @@ class Agent {
                         .build(),
                 new Payload(signedJWT));
         jweObject.encrypt(new RSAEncrypter(contactPubEnc));
+        System.out.println("JWE header:\n" + jweObject.getHeader());
 
         return jweObject.serialize();
     }
