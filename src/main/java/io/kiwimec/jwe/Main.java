@@ -6,8 +6,8 @@ public class Main {
   public static void main(String[] args) throws Exception {
 
     // create our agents
-    Agent alice = new Agent();
-    Agent bob = new Agent();
+    Agent alice = new Agent("Alice");
+    Agent bob = new Agent("Bob");
 
     // get them to exchange public keys with each other
     alice.sharePubKeysWith(bob);
@@ -33,6 +33,5 @@ public class Main {
       System.out.println(serialisedJwe);
     }
 
-    System.out.println("Hello World!");
   }
 }

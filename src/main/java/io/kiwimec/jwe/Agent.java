@@ -8,6 +8,9 @@ import com.nimbusds.jwt.*;
 
 class Agent {
 
+    // name of this agent
+    private String agentName;
+
     // key pair used to sign/verify the JWT signature
     private RSAKey priSig;
     public RSAKey pubSig;
@@ -23,7 +26,10 @@ class Agent {
     // static key counter, NOT THREAD SAFE
     static private int keyCounter = 0;
 
-    public Agent() throws Exception {
+    public Agent(String name) throws Exception {
+
+        // remember our name
+        agentName = name;
 
         // set up signing keys
         keyCounter++;
@@ -32,10 +38,8 @@ class Agent {
                 .keyUse(KeyUse.SIGNATURE)
                 .generate();
         pubSig = priSig.toPublicJWK();
-        System.out.println("Private signing key:");
-        System.out.println(priSig);
-        System.out.println("Public signing key:");
-        System.out.println(pubSig);
+        System.out.println(agentName + "'s private signing key:\n" + priSig);
+        System.out.println(agentName + "'s public signing key:\n" + pubSig);
 
         // set up encryption keys
         keyCounter++;
@@ -44,10 +48,8 @@ class Agent {
                 .keyUse(KeyUse.ENCRYPTION)
                 .generate();
         pubEnc = priEnc.toPublicJWK();
-        System.out.println("Private encryption key:");
-        System.out.println(priEnc);
-        System.out.println("Public encryption key:");
-        System.out.println(pubEnc);
+        System.out.println(agentName + "'s private encryption key:\n" + priEnc);
+        System.out.println(agentName + "'s public encryption key:\n" + pubEnc);
     }
 
     public void sharePubKeysWith(Agent agent) {
@@ -61,10 +63,22 @@ class Agent {
         SignedJWT signedJWT = new SignedJWT(
                 new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(priSig.getKeyID()).build(),
                 claimsSet);
+        // -----
+        // If you want to use a hardware based keystore or particular secure 
+        // random number generator you will need to initilise them somewhere
+        // and then reference them as per below. Note that the euqivalent will
+        // need to be done in the receiving code.
+        // See also https://connect2id.com/products/nimbus-jose-jwt/examples/pkcs11
+        //
+        //RSASSASigner signer = new RSASSASigner(priSig);
+        //signer.getJCAContext().setProvider(/* Reference your JCA provider here. */);
+        //signer.getJCAContext().setSecureRandom(/* Reference your secure random number generator here. */);
+        //signedJWT.sign(signer); /* Uncomment this line of code and comment out the next. */
+        // -----
         signedJWT.sign(new RSASSASigner(priSig));
-        System.out.println("Signed JWT header:\n" + signedJWT.getHeader());
-        System.out.println("Signed JWT claims:\n" + signedJWT.getJWTClaimsSet());
-        System.out.println("Signed JWT signature:\n" + signedJWT.getSignature());
+        System.out.println(agentName + " signed JWT with header:\n" + signedJWT.getHeader());
+        System.out.println(agentName + " signed JWT with claims:\n" + signedJWT.getJWTClaimsSet());
+        System.out.println(agentName + " signed JWT with signature:\n" + signedJWT.getSignature());
 
         // Create JWE object with signed JWT as payload
         JWEObject jweObject = new JWEObject(
@@ -73,7 +87,11 @@ class Agent {
                         .build(),
                 new Payload(signedJWT));
         jweObject.encrypt(new RSAEncrypter(contactPubEnc));
-        System.out.println("JWE header:\n" + jweObject.getHeader());
+        System.out.println(agentName + " created a JWE with header:\n" + jweObject.getHeader());
+        System.out.println(agentName + " created a JWE with encrypted key:\n" + jweObject.getEncryptedKey());
+        System.out.println(agentName + " created a JWE with initialisation vector:\n" + jweObject.getIV());
+        System.out.println(agentName + " created a JWE with cypher text:\n" + jweObject.getCipherText());
+        System.out.println(agentName + " created a JWE with authentication tag:\n" + jweObject.getAuthTag());
 
         return jweObject.serialize();
     }
