@@ -11,6 +11,10 @@ class Agent {
     // name of this agent
     private String agentName;
 
+    // time counter for telemetry, NOT THREAD SAFE
+    static private long timeMarker = 0;
+    static private long timeElapsed = 0;
+
     // key pair used to sign/verify the JWT signature
     private RSAKey priSig;
     public RSAKey pubSig;
@@ -23,13 +27,14 @@ class Agent {
     private RSAKey contactPubSig;
     private RSAKey contactPubEnc;
 
-    // static key counter, NOT THREAD SAFE
+    // static key counter used to given keys a unquie number, NOT THREAD SAFE
     static private int keyCounter = 0;
 
     public Agent(String name) throws Exception {
 
-        // remember our name
+        // remember our name and set the start time if not already set
         agentName = name;
+        log("Agent", "Creating new agent:", agentName);
 
         // set up signing keys
         keyCounter++;
@@ -38,8 +43,8 @@ class Agent {
                 .keyUse(KeyUse.SIGNATURE)
                 .generate();
         pubSig = priSig.toPublicJWK();
-        System.out.println(agentName + "'s private signing key:\n" + priSig);
-        System.out.println(agentName + "'s public signing key:\n" + pubSig);
+        log("Agent", agentName + "'s private signing key:", priSig.toString());
+        log("Agent", agentName + "'s public signing key:", pubSig.toString());
 
         // set up encryption keys
         keyCounter++;
@@ -48,8 +53,8 @@ class Agent {
                 .keyUse(KeyUse.ENCRYPTION)
                 .generate();
         pubEnc = priEnc.toPublicJWK();
-        System.out.println(agentName + "'s private encryption key:\n" + priEnc);
-        System.out.println(agentName + "'s public encryption key:\n" + pubEnc);
+        log("Agent", agentName + "'s private encryption key:", priEnc.toString());
+        log("Agent", agentName + "'s public encryption key:", pubEnc.toString());
     }
 
     public void sharePubKeysWith(Agent agent) {
@@ -76,9 +81,9 @@ class Agent {
         //signedJWT.sign(signer); /* Uncomment this line of code and comment out the next. */
         // -----
         signedJWT.sign(new RSASSASigner(priSig));
-        System.out.println(agentName + " signed JWT with header:\n" + signedJWT.getHeader());
-        System.out.println(agentName + " signed JWT with claims:\n" + signedJWT.getJWTClaimsSet());
-        System.out.println(agentName + " signed JWT with signature:\n" + signedJWT.getSignature());
+        log("createAJweFrom", agentName + " signed JWT with header:", signedJWT.getHeader().toString());
+        log("createAJweFrom", agentName + " signed JWT with claims:", signedJWT.getJWTClaimsSet().toString());
+        log("createAJweFrom", agentName + " signed JWT with signature:", signedJWT.getSignature().toString());
 
         // Create JWE object with signed JWT as payload
         JWEObject jweObject = new JWEObject(
@@ -87,11 +92,11 @@ class Agent {
                         .build(),
                 new Payload(signedJWT));
         jweObject.encrypt(new RSAEncrypter(contactPubEnc));
-        System.out.println(agentName + " created a JWE with header:\n" + jweObject.getHeader());
-        System.out.println(agentName + " created a JWE with encrypted key:\n" + jweObject.getEncryptedKey());
-        System.out.println(agentName + " created a JWE with initialisation vector:\n" + jweObject.getIV());
-        System.out.println(agentName + " created a JWE with cypher text:\n" + jweObject.getCipherText());
-        System.out.println(agentName + " created a JWE with authentication tag:\n" + jweObject.getAuthTag());
+        log("createAJweFrom", agentName + " created a JWE with header:", jweObject.getHeader().toString());
+        log("createAJweFrom", agentName + " created a JWE with encrypted key:", jweObject.getEncryptedKey().toString());
+        log("createAJweFrom", agentName + " created a JWE with initialisation vector:", jweObject.getIV().toString());
+        log("createAJweFrom", agentName + " created a JWE with cypher text:", jweObject.getCipherText().toString());
+        log("createAJweFrom", agentName + " created a JWE with authentication tag:", jweObject.getAuthTag().toString());
 
         return jweObject.serialize();
     }
@@ -106,13 +111,32 @@ class Agent {
         SignedJWT signedJWT = jweObject.getPayload().toSignedJWT();
         if(null == signedJWT) {
             System.out.println("Unable to extract a valid JWT.");
+            log("extractClaimsFrom", "Extracted JWT failed signature verification.", "");
             return null;
         }
         if(false == signedJWT.verify(new RSASSAVerifier(contactPubSig))) {
-            System.out.println("Extracted JWT failed signature verification.");
+            log("extractClaimsFrom", "Unable to extract a valid JWT.", "");
             return null;
         }
 
         return signedJWT.getJWTClaimsSet();
+    }
+
+    // Because I don't want to include a full logger or use the system one
+    static public void log(String functionName, String summary, String artefact) {
+
+        if(0 == timeMarker) {
+            timeMarker = System.currentTimeMillis();
+        }
+
+        long current = System.currentTimeMillis();
+        long interval = current - timeMarker;
+        timeElapsed = timeElapsed + interval;
+        timeMarker = current;
+
+        System.out.println("---[ fn: " + functionName + " ][ time: " + current + " ][ interval: " + interval + " ][ elapsed: " + timeElapsed + " ]---");
+        System.out.println(summary);
+        System.out.println(artefact);
+        System.out.println("");
     }
 }

@@ -25,13 +25,8 @@ public class Main {
 
     // if claimsSetReturned is not null print its contents so we can visually inspect
     if(null != claimsSetExtractedByBob) {
-      System.out.println("Alice's claims set:");
-      System.out.println(aliceClaimsSet);
-      System.out.println("Claims set extracted by Bob:");
-      System.out.println(claimsSetExtractedByBob);
-      System.out.println("Serialised JWE:");
-      System.out.println(serialisedJwe);
+      Agent.log("Main", "Claims set sent by Alice:", aliceClaimsSet.toString());
+      Agent.log("Main", "Claims set extracted by Bob:", claimsSetExtractedByBob.toString());
     }
-
   }
 }
