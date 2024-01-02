@@ -27,12 +27,12 @@ class Agent {
     private RSAKey contactPubSig;
     private RSAKey contactPubEnc;
 
-    // static key counter used to given keys a unquie number, NOT THREAD SAFE
+    // static key counter used to given keys a unique number, NOT THREAD SAFE
     static private int keyCounter = 0;
 
     public Agent(String name) throws Exception {
 
-        // remember our name and set the start time if not already set
+        // remember our name and log Actor creation
         agentName = name;
         log("Agent", "Creating new agent:", agentName);
 
